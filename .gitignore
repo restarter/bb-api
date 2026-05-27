@@ -2,6 +2,17 @@
 .worktrees/
 
 # Beads / Dolt files (added by bd init)
+.beads/
 .dolt/
 *.db
 .beads-credential-key
+
+# macOS
+.DS_Store
+
+# Local env
+.env
+
+# Backups
+*.bak
+*.old
