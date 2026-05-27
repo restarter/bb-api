@@ -17,8 +17,11 @@ set -euo pipefail
 
 REPO="restarter/bb-api"
 BIN_NAME="bb-api"
-# RAW_BASE / API_BASE / CURL_OPTS are introduced in Task 3 when first used by
-# fetch_release_json / download_file.
+RAW_BASE="https://raw.githubusercontent.com/${REPO}"
+API_BASE="https://api.github.com/repos/${REPO}"
+
+# Curl hardening: HTTPS only (no http:// redirects), TLS 1.2+, redirect cap.
+CURL_OPTS=(--proto '=https' --proto-redir '=https' --tlsv1.2 --max-redirs 5 -fsSL)
 
 # Colors + styles. Skipped on non-TTY stderr (clean CI output).
 if [ -t 2 ]; then
@@ -131,6 +134,110 @@ find_bb_api_on_path() {
     done
 }
 
+# --- Release / download helpers ---
+
+# fetch_release_json: GET /releases/latest. Public repo only. Unauth rate
+# limit is 60/hr per IP. Don't swallow curl stderr — users need to tell
+# DNS vs 403 vs 404 apart.
+fetch_release_json() {
+    local url="${API_BASE}/releases/latest"
+    RELEASE_JSON=$(curl "${CURL_OPTS[@]}" "$url") || {
+        log_error "Failed to fetch ${url}"
+        log_info  "    See https://github.com/${REPO}/releases (is there a release?)"
+        log_info  "    Or check network / rate limit (60/hr unauth)."
+        exit 1
+    }
+}
+
+# extract_tag_name: parse "tag_name" out of the JSON arg. Uses jq when
+# available (project convention); falls back to a strict grep+sed regex.
+# Always SemVer-whitelists the result via a bash regex so the value can be
+# safely interpolated into the download URL. Refuses `../`, spaces, and any
+# non-SemVer characters — a case-glob is too permissive (`v[0-9]*.*` would
+# match `v1../../../evil.0.0` because `*` is greedy and doesn't restrict
+# to digits). Bash regex `[[ =~ ]]` is supported on bash 3.2+.
+extract_tag_name() {
+    local tag
+    if command -v jq >/dev/null 2>&1; then
+        tag=$(printf '%s' "$1" | jq -r '.tag_name // empty')
+    else
+        tag=$(printf '%s' "$1" \
+              | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' \
+              | head -1 \
+              | sed -E 's/.*"([^"]+)"$/\1/')
+    fi
+    if [ -z "$tag" ]; then
+        return 1
+    fi
+    if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?(\+[A-Za-z0-9.-]+)?$ ]]; then
+        printf '%s\n' "$tag"
+    else
+        die "Refusing tag with unexpected shape: '$tag' (expected vMAJOR.MINOR.PATCH[-PRE][+BUILD])"
+    fi
+}
+
+# download_file <url> <out>
+download_file() {
+    local url=$1 out=$2
+    curl "${CURL_OPTS[@]}" -o "$out" "$url"
+}
+
+# --- PATH / multi-binary helpers ---
+
+# check_path_and_multi_binary: emit PATH-membership warning + detect duplicate
+# bb-api copies on $PATH. Uses _resolve_symlink_chain for multi-hop chains.
+check_path_and_multi_binary() {
+    local target_bin_dir=$BIN_DIR
+
+    if ! path_contains "$target_bin_dir"; then
+        echo "" >&2
+        log_warning "${target_bin_dir} is not in your PATH."
+        printf '%b\n' "    ${DIM}Add to ~/.bashrc, ~/.zshrc, or ~/.profile:${NC}" >&2
+        echo "" >&2
+        printf '%b\n' "      ${BOLD}export PATH=\"\$PATH:${target_bin_dir}\"${NC}" >&2
+        echo "" >&2
+    fi
+
+    # bash 3.2 empty-array set -u safety
+    local copies
+    copies=()
+    local line
+    while IFS= read -r line; do
+        [ -n "$line" ] && copies+=("$line")
+    done < <(find_bb_api_on_path)
+    local copies_count=${#copies[@]}
+
+    if [ "$copies_count" -gt 1 ]; then
+        echo "" >&2
+        log_warning "Multiple '${BIN_NAME}' executables on your PATH — earlier entries win."
+        printf '%b\n' "    ${DIM}Found:${NC}" >&2
+        local i=1 p
+        for p in "${copies[@]}"; do
+            printf '%b\n' "      ${BOLD}${i}.${NC} $p" >&2
+            i=$((i+1))
+        done
+        echo "" >&2
+        printf '%b\n' "    ${DIM}We installed at: ${target_bin_dir}/${BIN_NAME} -> ${DATA_DIR}/${BIN_NAME}${NC}" >&2
+    fi
+}
+
+# final_message: print next-steps after a successful install/update.
+final_message() {
+    local tag=$1
+    printf '%b\n' "
+   ${GREEN}${BOLD}bb-api ${tag} ready${NC} at ${BOLD}${BIN_DIR}/${BIN_NAME}${NC}
+
+   ${CYAN}${BOLD}Next steps${NC}
+     1. Edit ${BOLD}${DATA_DIR}/.env${NC} with your Bitbucket credentials.
+        Token: ${DIM}https://bitbucket.org/account/settings/api-tokens/${NC}
+     2. cd into any bitbucket.org repo and run:
+        ${BOLD}bb-api pr list${NC}
+
+   ${DIM}Docs: https://github.com/${REPO}#readme${NC}
+   ${DIM}Re-run this installer to update; .env is never touched.${NC}
+" >&2
+}
+
 # --- Orchestration wrapper ---
 # Holds the step sequence + control flow. Helpers are above, testable.
 _bb_api_install_main() {
@@ -148,6 +255,45 @@ _bb_api_install_main() {
         log_info "bin:  ${BOLD}$BIN_DIR${NC} (user)"
     fi
     log_info "data: ${BOLD}$DATA_DIR${NC}"
+
+    _step_call "Fetching latest release"
+    fetch_release_json
+    TAG=$(extract_tag_name "$RELEASE_JSON") || die "No tag_name in release JSON (release exists?)"
+    log_success "Latest release: ${BOLD}${TAG}${NC}"
+
+    _step_call "Checking existing installation"
+    if [ -f "$DATA_DIR/VERSION" ]; then
+        INSTALLED_TAG=$(cat "$DATA_DIR/VERSION")
+        if [ "$INSTALLED_TAG" = "$TAG" ]; then
+            log_info "Already at ${TAG}, nothing to update."
+            log_info "(.env and .env.example left untouched.)"
+            # Re-chmod 600 unconditionally to heal manual-install drift.
+            if [ -f "$DATA_DIR/.env" ]; then
+                chmod 600 "$DATA_DIR/.env"
+            fi
+            check_path_and_multi_binary
+            exit 0
+        fi
+        log_info "Updating ${INSTALLED_TAG} -> ${TAG}"
+    else
+        log_info "Fresh install: ${TAG}"
+        INSTALLED_TAG=""
+    fi
+
+    _step_call "Downloading"
+    # Stage INSIDE DATA_DIR so the final mv is atomic (rename-on-same-fs).
+    mkdir -p "$DATA_DIR"
+    chmod 700 "$DATA_DIR"
+    DOWNLOAD_TMP=$(mktemp -d "$DATA_DIR/.stage.XXXXXX")
+    # shellcheck disable=SC2064  # expand DOWNLOAD_TMP NOW for trap
+    trap "rm -rf '$DOWNLOAD_TMP'" EXIT
+    download_file "${RAW_BASE}/${TAG}/${BIN_NAME}"    "${DOWNLOAD_TMP}/${BIN_NAME}"    || die "Download failed: ${BIN_NAME}"
+    download_file "${RAW_BASE}/${TAG}/.env.example"   "${DOWNLOAD_TMP}/.env.example"   || die "Download failed: .env.example"
+    log_success "Fetched ${BIN_NAME} and .env.example"
+
+    # Sanity-check the downloaded bb-api is actually a bash script.
+    head -1 "${DOWNLOAD_TMP}/${BIN_NAME}" | grep -q '^#!/usr/bin/env bash' \
+        || die "Downloaded file doesn't look like bb-api (missing shebang)."
 }
 
 # Run only when executed directly. Tests source this file to exercise helpers.
