@@ -294,6 +294,67 @@ _bb_api_install_main() {
     # Sanity-check the downloaded bb-api is actually a bash script.
     head -1 "${DOWNLOAD_TMP}/${BIN_NAME}" | grep -q '^#!/usr/bin/env bash' \
         || die "Downloaded file doesn't look like bb-api (missing shebang)."
+
+    _step_call "Installing"
+
+    # Atomic install: bb-api lands as `bb-api.new` first, then `mv` into the
+    # final name on the same filesystem (rename is atomic). A crash mid-install
+    # leaves an old bb-api in place rather than a half-written file.
+    cp "${DOWNLOAD_TMP}/${BIN_NAME}" "${DATA_DIR}/${BIN_NAME}.new"
+    chmod +x "${DATA_DIR}/${BIN_NAME}.new"
+    mv "${DATA_DIR}/${BIN_NAME}.new" "${DATA_DIR}/${BIN_NAME}"
+
+    # .env.example: refresh with explicit mode 644.
+    cp "${DOWNLOAD_TMP}/.env.example" "${DATA_DIR}/.env.example.new"
+    chmod 644 "${DATA_DIR}/.env.example.new"
+    mv "${DATA_DIR}/.env.example.new" "${DATA_DIR}/.env.example"
+
+    # VERSION marker — used by the skip-if-same-tag fast path on re-run.
+    printf '%s\n' "$TAG" > "${DATA_DIR}/VERSION"
+
+    # .env: create on first install, NEVER overwrite on re-run. Always end
+    # at mode 600 (heals previous 644 if user came from a manual install).
+    if [ -f "${DATA_DIR}/.env" ]; then
+        chmod 600 "${DATA_DIR}/.env"
+        log_info ".env exists; left untouched (re-chmod 600 applied)."
+        log_info "(check .env.example for new variables: diff ${DATA_DIR}/.env ${DATA_DIR}/.env.example)"
+    else
+        # Atomic + race-free: umask makes cp create the target as 600 in one syscall.
+        ( umask 077 && cp "${DATA_DIR}/.env.example" "${DATA_DIR}/.env" )
+        log_info "Created ${DATA_DIR}/.env from .env.example (chmod 600)."
+        log_info "Edit it with your Bitbucket credentials before first use."
+    fi
+
+    # Symlink into PATH. Refuse non-symlink overwrite unless BB_API_FORCE=1.
+    # Warn when an existing symlink points somewhere other than our data dir.
+    mkdir -p "$BIN_DIR"
+    if [ -e "${BIN_DIR}/${BIN_NAME}" ] && [ ! -L "${BIN_DIR}/${BIN_NAME}" ]; then
+        if [ "${BB_API_FORCE:-}" = "1" ]; then
+            log_warning "Removing existing non-symlink ${BIN_DIR}/${BIN_NAME} (BB_API_FORCE=1)."
+            rm -f "${BIN_DIR}/${BIN_NAME}"
+        else
+            die "${BIN_DIR}/${BIN_NAME} exists and is not a symlink. Refusing to overwrite. Remove it or re-run with BB_API_FORCE=1."
+        fi
+    elif [ -L "${BIN_DIR}/${BIN_NAME}" ]; then
+        local existing_target
+        existing_target=$(readlink -- "${BIN_DIR}/${BIN_NAME}")
+        if [ "$existing_target" != "${DATA_DIR}/${BIN_NAME}" ]; then
+            log_warning "Replacing existing symlink ${BIN_DIR}/${BIN_NAME} -> $existing_target"
+        fi
+    fi
+    # -n avoids the corner case where target is a dir-symlink (would otherwise
+    # create the link INSIDE that directory).
+    ln -sfn "${DATA_DIR}/${BIN_NAME}" "${BIN_DIR}/${BIN_NAME}"
+    log_success "Linked ${BIN_DIR}/${BIN_NAME} -> ${DATA_DIR}/${BIN_NAME}"
+
+    _step_call "Verifying"
+    if bash -n "${DATA_DIR}/${BIN_NAME}"; then
+        log_success "Syntax OK"
+    else
+        die "Syntax check failed for ${DATA_DIR}/${BIN_NAME}."
+    fi
+    check_path_and_multi_binary
+    final_message "$TAG"
 }
 
 # Run only when executed directly. Tests source this file to exercise helpers.
