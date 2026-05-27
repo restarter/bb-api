@@ -13,7 +13,16 @@ sudo apt install shellcheck jq                # Debian/Ubuntu (note: apt 'bats' 
 ## Running tests
 
 ```bash
-shellcheck bb-api test/test_helper.bash
+shellcheck bb-api test/test_helper.bash scripts/install.sh
+bats test/*.bats
+```
+
+### macOS bash 3.2
+
+CI runs on ubuntu-24.04 (bash 5.x, GNU `readlink`). bb-api and `scripts/install.sh` target macOS bash 3.2 too (BSD `readlink`, no `mapfile`, empty-array `set -u` quirks). Run the full bats suite locally on macOS before pushing — these bugs won't surface in CI:
+
+```bash
+/bin/bash --version   # confirm 3.2.x — the macOS system bash
 bats test/*.bats
 ```
 
@@ -109,3 +118,20 @@ Conventional commits with `bb-api-XXX` task scope:
 | New env var | `docs/commands.md` Environment section + `.env.example` if applicable |
 | Breaking change | CHANGELOG `### Changed` + `### Migration Notes` |
 | New scope requirement | README setup section + per-command notes in `docs/commands.md` |
+
+## scripts/
+
+`scripts/install.sh` — the curl-pipe-bash installer. Shellchecked in CI alongside `bb-api`. Pure-function helpers (`pick_install_dir`, `path_contains`, `extract_tag_name`, `_resolve_symlink_chain`, `find_bb_api_on_path`) covered by `test/test_install_helpers.bats`. The `resolve_script_dir` helper in `bb-api` (used at startup to anchor `.env` discovery through symlinks) is covered by `test/test_script_dir.bats`.
+
+When bumping a release:
+
+1. Land features on main under `[Unreleased]`.
+2. Rename `[Unreleased]` → `[X.Y.Z] - YYYY-MM-DD` and open a fresh empty `[Unreleased]`.
+3. `git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`
+4. Build release notes with `awk '/^## \[X\.Y\.Z\]/{p=1; next} /^## \[/{p=0} p' CHANGELOG.md > /tmp/notes.md`, validate non-empty (`[ -s /tmp/notes.md ]`), then `gh release create vX.Y.Z --notes-file /tmp/notes.md`.
+
+Users picking up `curl ... | bash` get the new tag automatically — the installer queries `/releases/latest` and SemVer-whitelists the tag before fetching.
+
+## A note on `.env`
+
+bb-api `source`s `.env` — any shell metacharacter executes on every invocation. Never put `$(...)`, backticks, or unmatched quotes in `.env` or `.env.example`. Switching bb-api to a safe key=value parser is tracked as a follow-up.

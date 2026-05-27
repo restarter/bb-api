@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `scripts/install.sh` — one-line curl-pipe-bash installer:
+  `curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/restarter/bb-api/main/scripts/install.sh | bash`
+  Installs the latest tagged release into `~/.local/share/bb-api/` and symlinks it into `/usr/local/bin/` (writable) or `~/.local/bin/`. On first install creates `.env` from `.env.example` (chmod 600 via `umask 077`); never overwrites `.env` on update. Refreshes `.env.example` (chmod 644) each run so users can diff for new variables. Writes a `VERSION` marker for skip-if-same-tag fast path. Hardened curl flags (`--proto =https --tlsv1.2 --max-redirs 5`); fetches from `/releases/latest`; SemVer-whitelists the tag before interpolating into download URLs.
+- `BB_API_USER_ONLY=1` env var — force `~/.local/bin` install regardless of `/usr/local/bin` writability.
+- `BB_API_FORCE=1` env var — override the refusal to overwrite a pre-existing non-symlink at the target PATH location.
+
+## [0.1.0] - 2026-05-27
+
+### Added
 - `pr decline <id> [id ...]` — close PR without merging; batch-capable
 - `pr merge <id> [--squash|--commit|--ff] [--delete-branch] [--message=...]` — merge PR; default strategy is `merge_commit`
 - `pr checks <id>` — show PR statuses + Bitbucket Pipelines for the source branch; degrades gracefully when token lacks `read:pipeline` scope

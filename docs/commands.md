@@ -206,5 +206,11 @@ All commands die with non-zero exit on API error (unless noted). Output is plain
 - `BB_API_WORKSPACE=<ws>` + `BB_API_REPO=<repo>` — bypass git remote auto-detect entirely
 - `BB_API_BATCH_DELAY=<seconds>` — delay between batch API calls (default `0.3`; set `0` in tests)
 - `BB_API_EMAIL` / `BB_API_TOKEN` — credentials (loaded from `.env` next to script by default)
+- `BB_API_USER_ONLY=1` — installer-only; force `~/.local/bin` (see [`../scripts/install.sh`](../scripts/install.sh))
+- `BB_API_FORCE=1` — installer-only; override non-symlink overwrite refusal (see [`../scripts/install.sh`](../scripts/install.sh))
 
 See [design.md](design.md) for the full env precedence and auto-detect chain.
+
+## Installation
+
+See [`scripts/install.sh`](../scripts/install.sh) and the README install section for the one-line curl-pipe-bash installer.
