@@ -5,18 +5,42 @@ Shell wrapper for Bitbucket Cloud REST API 2.0.
 ## Install
 
 ```bash
-git clone https://github.com/restarter/bb-api ~/code/bb-api
-ln -s ~/code/bb-api/bb-api ~/.local/bin/bb-api    # add to PATH
-# On macOS, ~/.local/bin is NOT in PATH by default. Add to ~/.zshrc:
-#   export PATH="$HOME/.local/bin:$PATH"
-# Or symlink to /usr/local/bin (already in PATH on macOS/Linux) using sudo.
+curl --proto '=https' --tlsv1.2 -fsSL \
+    https://raw.githubusercontent.com/restarter/bb-api/main/scripts/install.sh | bash
+```
 
-cp ~/code/bb-api/.env.example ~/code/bb-api/.env
-chmod 600 ~/code/bb-api/.env                       # protect API token
+Installs the latest tagged release into `~/.local/share/bb-api/` and symlinks it into your PATH (`/usr/local/bin/bb-api` if writable, else `~/.local/bin/bb-api`). On first install, `.env` is created from `.env.example` (chmod 600). **Re-run the same command to update**; your `.env` is never touched.
+
+Useful env vars:
+- `BB_API_USER_ONLY=1` — force install into `~/.local/bin` (skip `/usr/local/bin` even if writable).
+- `BB_API_FORCE=1` — overwrite a pre-existing non-symlink at the target PATH location.
+
+### Manual install
+
+```bash
+git clone https://github.com/restarter/bb-api ~/.local/share/bb-api
+ln -s ~/.local/share/bb-api/bb-api ~/.local/bin/bb-api    # or /usr/local/bin
+cp ~/.local/share/bb-api/.env.example ~/.local/share/bb-api/.env
+chmod 600 ~/.local/share/bb-api/.env
 # then edit .env with your credentials
 ```
 
-Dependencies: `curl`, `jq` (`brew install jq` / `apt install jq`).
+### Security note
+
+bb-api `source`s the `.env` file directly, so shell metacharacters in values execute on every invocation. Keep `.env` to plain `KEY=value` lines — no backticks, no `$(...)`, no unmatched quotes. (Switching to a safe key=value parser is tracked as a follow-up.)
+
+Curl-pipe-bash relies on TLS for transport integrity. There's no SHA pinning of `install.sh` or the downloaded `bb-api`. If your threat model requires offline verification, download first and inspect:
+
+```bash
+curl --proto '=https' --tlsv1.2 -fsSL \
+    https://raw.githubusercontent.com/restarter/bb-api/main/scripts/install.sh -o install.sh
+less install.sh
+bash install.sh
+```
+
+### Dependencies
+
+`curl`, `jq` (`brew install jq` / `apt install jq`).
 
 ## Setup
 
@@ -32,7 +56,7 @@ Required scopes:
 
 ### 2. Configure credentials
 
-Edit `~/code/bb-api/.env`:
+Edit `~/.local/share/bb-api/.env`:
 
 ```bash
 BB_API_EMAIL="your-email@example.com"
