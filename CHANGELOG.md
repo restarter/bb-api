@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README "For AI agents" section now lists three integration paths (CLAUDE.md snippet, rule, skill) with copy-paste curl one-liners for the rule and skill, plus a new "One-shot install" section showcasing `bb-api install-agent`.
 
 ### Changed
-- README headline reframed: bb-api is positioned as a CLI built for AI coding agents, with CLAUDE.md snippet / rule / skill bundled out of the box.
+- README fully reframed around the AI-agent use case. Lead promises "tell your agent → done in a minute"; Quick Start is now a ready-to-paste prompt that walks an AI coding agent through running the installer, dropping integration artifacts, and prompting the user for credentials. Adds a "What ships out of the box" table contrasting CLAUDE.md / AGENTS.md / rule / skill, surfaces the session-restart caveat for rule/skill loading, and moves Security / Limitations / Authentication below the agent flow. Cross-tool focus broadened beyond Claude Code (Cursor, Copilot, Codex, Aider). (bb-api-k9i)
 - `docs/CLAUDE.md.example` refactored from embedded code-fence wrapper into a short pointer document. The canonical snippet now lives in `docs/bb-api-agent-snippet.md`. Cross-links to all three artifact files + recommends `bb-api install-agent`. (bb-api-k9i)
 - `bb-api` top-level guard now short-circuits auth/repo resolution for `install-agent` / `help` subcommands so they run without `.env` or a Bitbucket-repo CWD. `usage()` uses defensive defaults (`${WORKSPACE:-<workspace>}`) so it renders correctly through the short-circuit path. (bb-api-k9i)
 
