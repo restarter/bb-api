@@ -1,39 +1,39 @@
-# bb-api
+# bb-bash
 
 > **Bitbucket Cloud CLI built for AI coding agents.**
 >
-> Tell your agent "set up bb-api in this project" — done in under a minute. Then ask it to review PRs, leave inline comments, approve, merge, all from chat.
+> Tell your agent "set up bb-bash in this project" — done in under a minute. Then ask it to review PRs, leave inline comments, approve, merge, all from chat.
 
-`bb-api` is a single-file bash wrapper around the Bitbucket Cloud REST API 2.0. It ships with drop-in integration artifacts (Claude Code rule, skill, `CLAUDE.md` snippet, `AGENTS.md` snippet) so the agents you already use know how to call it — without you wiring anything up.
+`bb-bash` is a single-file bash wrapper (binary: `bbb`) around the Bitbucket Cloud REST API 2.0. It ships with drop-in integration artifacts (Claude Code rule, skill, `CLAUDE.md` snippet, `AGENTS.md` snippet) so the agents you already use know how to call it — without you wiring anything up.
 
 ## Quick start — let your agent do it
 
 Paste this prompt into Claude Code / Cursor / Copilot Chat / any AI coding agent with terminal access:
 
 ````text
-Install bb-api in this project (https://github.com/restarter/bb-api):
+Install bb-bash in this project (https://github.com/restarter/bb-bash):
 
 1. Run the installer:
    curl --proto '=https' --tlsv1.2 -fsSL \
-       https://raw.githubusercontent.com/restarter/bb-api/main/scripts/install.sh | bash
+       https://raw.githubusercontent.com/restarter/bb-bash/main/scripts/install.sh | bash
 
 2. Drop the AI-agent integration artifacts into this project:
-   bb-api install-agent --rule --skill --claudemd --agents
+   bbb install-agent --rule --skill --claudemd --agents
 
 3. Ask me for my Bitbucket email and API token. Write them into
-   ~/.local/share/bb-api/.env (keep chmod 600). The token is created
+   ~/.local/share/bb-bash/.env (keep chmod 600). The token is created
    at https://bitbucket.org/account/settings/api-tokens/ with scopes:
      read:repository:bitbucket
      read:pullrequest:bitbucket
      write:pullrequest:bitbucket
-     read:pipeline:bitbucket  (optional, for `bb-api pr checks`)
+     read:pipeline:bitbucket  (optional, for `bbb pr checks`)
 
 4. After install-agent finishes, tell me to restart this session so
    the .claude/rules/ and .claude/skills/ artifacts load. CLAUDE.md
    and AGENTS.md are picked up automatically.
 
-5. Confirm: run `bb-api help`. Then if I'm inside a Bitbucket repo,
-   also run `bb-api pr list`.
+5. Confirm: run `bbb help`. Then if I'm inside a Bitbucket repo,
+   also run `bbb pr list`.
 ````
 
 When it's done, ask the agent things like:
@@ -43,7 +43,7 @@ When it's done, ask the agent things like:
 - "Approve PR #12 and merge with `--squash --delete-branch`."
 - "Reply to comment 753926626 on PR #42 with: 'Good catch, fixed.'"
 
-The agent already knows the commands because the install dropped a rule + skill into `.claude/`, plus a `## Bitbucket via bb-api` section in your `CLAUDE.md` / `AGENTS.md`.
+The agent already knows the commands because the install dropped a rule + skill into `.claude/`, plus a `## Bitbucket via bb-bash` section in your `CLAUDE.md` / `AGENTS.md`.
 
 ## What ships out of the box
 
@@ -51,12 +51,12 @@ The agent already knows the commands because the install dropped a rule + skill 
 |---|---|---|---|
 | `CLAUDE.md` snippet | project root | every turn | Claude / Cursor / Copilot via `CLAUDE.md` |
 | `AGENTS.md` snippet | project root | every turn | cross-tool agents (OpenAI Codex, Aider, Continue, ...) |
-| `.claude/rules/bb-api-rule.md` | Claude Code project | session start | short always-on hint, "bb-api exists, here's how" |
-| `.claude/skills/bb-api/SKILL.md` | Claude Code project | on-demand | full workflows (review, respond, batch cleanup); zero context cost until invoked |
+| `.claude/rules/bb-bash-rule.md` | Claude Code project | session start | short always-on hint, "bbb exists, here's how" |
+| `.claude/skills/bb-bash/SKILL.md` | Claude Code project | on-demand | full workflows (review, respond, batch cleanup); zero context cost until invoked |
 
-Pick what fits your stack. `bb-api install-agent` accepts any combination of `--rule --skill --claudemd --agents`. Idempotent — re-run is safe; `--force` overwrites; `--dry-run` previews.
+Pick what fits your stack. `bbb install-agent` accepts any combination of `--rule --skill --claudemd --agents`. Idempotent — re-run is safe; `--force` overwrites; `--dry-run` previews.
 
-## What bb-api can do
+## What bb-bash can do
 
 - **Read:** `pr list`, `pr show`, `pr diff`, `pr comments`, `pr checks` (CI + Pipelines)
 - **Comment:** `pr comment`, `pr inline [--old]` (new/deleted code), `pr reply`, `pr edit-comment`, `pr delete-comment`
@@ -70,19 +70,19 @@ All commands auto-detect workspace and repo from your git remote — no env vars
 
 ```bash
 curl --proto '=https' --tlsv1.2 -fsSL \
-    https://raw.githubusercontent.com/restarter/bb-api/main/scripts/install.sh | bash
+    https://raw.githubusercontent.com/restarter/bb-bash/main/scripts/install.sh | bash
 
-bb-api install-agent --rule --skill --claudemd --agents   # drop integration artifacts
+bbb install-agent --rule --skill --claudemd --agents   # drop integration artifacts
 
-$EDITOR ~/.local/share/bb-api/.env                         # add BB_API_EMAIL + BB_API_TOKEN
+$EDITOR ~/.local/share/bb-bash/.env                         # add BB_BASH_EMAIL + BB_BASH_TOKEN
 ```
 
 Installer notes:
 
-- Installs to `/usr/local/bin/bb-api` if writable, otherwise `~/.local/bin/bb-api`.
+- Installs to `/usr/local/bin/bbb` if writable, otherwise `~/.local/bin/bbb`.
 - First run creates `.env` (chmod 600) from `.env.example`. **Re-run to update**; `.env` is never touched.
-- `BB_API_USER_ONLY=1` forces `~/.local/bin` even when `/usr/local/bin` is writable.
-- `BB_API_FORCE=1` overrides the refusal to overwrite a non-symlink at the PATH target.
+- `BB_BASH_USER_ONLY=1` forces `~/.local/bin` even when `/usr/local/bin` is writable.
+- `BB_BASH_FORCE=1` overrides the refusal to overwrite a non-symlink at the PATH target.
 
 For a clone-and-symlink install, see [docs/contributing.md](docs/contributing.md).
 
@@ -93,23 +93,23 @@ Create at https://bitbucket.org/account/settings/api-tokens/. Required scopes:
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
 - `write:pullrequest:bitbucket`
-- `read:pipeline:bitbucket` — *optional, only needed for `bb-api pr checks` to show Pipelines; gracefully omitted otherwise*
+- `read:pipeline:bitbucket` — *optional, only needed for `bbb pr checks` to show Pipelines; gracefully omitted otherwise*
 
-Then put your email and token in `~/.local/share/bb-api/.env`:
+Then put your email and token in `~/.local/share/bb-bash/.env`:
 
 ```bash
-BB_API_EMAIL="you@example.com"
-BB_API_TOKEN="<api-token>"
+BB_BASH_EMAIL="you@example.com"
+BB_BASH_TOKEN="<api-token>"
 ```
 
-Workspace and repo slug are auto-detected from `git remote`. Override with `BB_API_WORKSPACE` + `BB_API_REPO` env vars (for use outside a git repo), or `BB_API_REMOTE=<name>` to pick a specific remote.
+Workspace and repo slug are auto-detected from `git remote`. Override with `BB_BASH_WORKSPACE` + `BB_BASH_REPO` env vars (for use outside a git repo), or `BB_BASH_REMOTE=<name>` to pick a specific remote.
 
 ## Inline comments — two modes
 
 | Command | `inline` field | Use case |
 |---------|---------------|----------|
-| `bb-api pr inline <id> <path> <line> <text>` | `"to": <line>` | new / modified code |
-| `bb-api pr inline --old <id> <path> <line> <text>` | `"from": <line>` | deleted / old code |
+| `bbb pr inline <id> <path> <line> <text>` | `"to": <line>` | new / modified code |
+| `bbb pr inline --old <id> <path> <line> <text>` | `"from": <line>` | deleted / old code |
 
 Line numbers are real file line numbers, not diff line numbers.
 
@@ -117,7 +117,7 @@ Line numbers are real file line numbers, not diff line numbers.
 
 - **Bitbucket Cloud only** — no Bitbucket Server / Data Center.
 - **No pending / draft comments** — Bitbucket's "Start review" batching is web-UI only; the API publishes every comment immediately.
-- **`pr list --reviewer=<user>` not supported** — Bitbucket BBQL doesn't expose `reviewers.username` filtering. Workaround: pipe `bb-api pr list` through `jq`. Tracked in `bb-api-oja`.
+- **`pr list --reviewer=<user>` not supported** — Bitbucket BBQL doesn't expose `reviewers.username` filtering. Workaround: pipe `bbb pr list` through `jq`. Tracked in `bb-api-oja`.
 - **`pr update --reviewers=u1,u2` uses usernames** — Bitbucket has been deprecating usernames as stable identifiers. Migration to `account_id` / `uuid` tracked in `bb-api-oja`.
 
 ## Authentication notes
@@ -126,19 +126,19 @@ Basic Auth with `email:api-token` (Bitbucket required this format since Sept 202
 
 ## Security
 
-`bb-api` sources `.env` directly, so shell metacharacters in values **execute on every invocation**. Keep `.env` to plain `KEY=value` lines — no backticks, no `$(...)`, no unmatched quotes. Switching to a safe parser is tracked as a follow-up.
+`bbb` sources `.env` directly, so shell metacharacters in values **execute on every invocation**. Keep `.env` to plain `KEY=value` lines — no backticks, no `$(...)`, no unmatched quotes. Switching to a safe parser is tracked as a follow-up.
 
-The `curl ... | bash` installer relies on HTTPS for transport integrity — there's no SHA pinning on `install.sh` or downloaded `bb-api`. Same applies to `bb-api install-agent` (fetches from `raw.githubusercontent.com`). Pin a release tag for reproducibility:
+The `curl ... | bash` installer relies on HTTPS for transport integrity — there's no SHA pinning on `install.sh` or downloaded `bbb`. Same applies to `bbb install-agent` (fetches from `raw.githubusercontent.com`). Pin a release tag for reproducibility:
 
 ```bash
-BB_API_REF=v0.1.2 bb-api install-agent --rule --skill --claudemd --agents
+BB_BASH_REF=v0.1.2 bbb install-agent --rule --skill --claudemd --agents
 ```
 
 If your threat model requires offline review, download first and inspect:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -fsSL \
-    https://raw.githubusercontent.com/restarter/bb-api/main/scripts/install.sh -o install.sh
+    https://raw.githubusercontent.com/restarter/bb-bash/main/scripts/install.sh -o install.sh
 less install.sh   # review
 bash install.sh
 ```
