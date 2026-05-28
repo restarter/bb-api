@@ -100,14 +100,16 @@ bats has no native coverage tool. Approach is qualitative: one happy-path + one 
 
 ## Commit convention
 
-Conventional commits with `bb-api-XXX` beads task ID as scope (the beads project prefix remains `bb-api-` for historical reasons; only the binary/project was renamed):
+Conventional commits with `bb-bash-XXX` beads task ID as scope:
 
-- `feat(bb-api-XXX): add 'pr foo' command`
-- `fix(bb-api-XXX): handle empty response in pr bar`
-- `docs(bb-api-XXX): update commands.md for new flags`
-- `test(bb-api-XXX): cover edge case`
-- `ci(bb-api-XXX): bump action SHA`
-- Breaking change: append `!` → `feat(bb-api-XXX)!: ...` + describe migration in commit body
+- `feat(bb-bash-XXX): add 'pr foo' command`
+- `fix(bb-bash-XXX): handle empty response in pr bar`
+- `docs(bb-bash-XXX): update commands.md for new flags`
+- `test(bb-bash-XXX): cover edge case`
+- `ci(bb-bash-XXX): bump action SHA`
+- Breaking change: append `!` → `feat(bb-bash-XXX)!: ...` + describe migration in commit body
+
+Pre-rename commits in git history use the older `bb-api-XXX` scope (immutable). The beads tasks themselves were renamed via `bd rename-prefix`, so `bd show bb-bash-XXX` resolves to the same issue.
 
 ## When to update docs
 

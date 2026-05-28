@@ -269,10 +269,10 @@ load_install_sh() {
     [ -z "$output" ]
 }
 
-# --- entry-point guard (regression: bb-api-bhf) ---
+# --- entry-point guard (regression: bb-bash-bhf) ---
 
 @test "install.sh: BASH_SOURCE guard survives stdin pipe (curl|bash) under set -u" {
-    # Regression for bb-api-bhf — `curl ... | bash` failed because the
+    # Regression for bb-bash-bhf — `curl ... | bash` failed because the
     # entry-point guard `[[ "${BASH_SOURCE[0]}" == "${0}" ]]` dereferenced
     # an empty array under `set -u` and aborted before main ran.
     #

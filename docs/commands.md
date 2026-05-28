@@ -184,7 +184,7 @@ All commands die with non-zero exit on API error (unless noted). Output is plain
 
 **Required scopes:** `write:pullrequest:bitbucket`
 
-**Important:** `--reviewers` performs **full replacement** (not append) — Bitbucket API has no PATCH semantics for the reviewers array. Existing reviewers not in the new list are removed. Reviewers passed as Bitbucket usernames (UUID migration tracked in bb-api-oja).
+**Important:** `--reviewers` performs **full replacement** (not append) — Bitbucket API has no PATCH semantics for the reviewers array. Existing reviewers not in the new list are removed. Reviewers passed as Bitbucket usernames (UUID migration tracked in bb-bash-oja).
 
 ---
 

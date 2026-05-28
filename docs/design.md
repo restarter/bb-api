@@ -93,7 +93,7 @@ fi
 
 ## Known constraints
 
-- **Token in process listings.** `curl -u email:token` puts credentials in process args, visible via `ps` on the same user. Acceptable for personal CLI; for shared systems use `curl --config -` pattern (deferred to `bb-api-oja`).
-- **`pr update --reviewers` uses usernames.** Bitbucket is deprecating username as a stable identifier. UUID/account_id migration tracked in bb-api-oja.
+- **Token in process listings.** `curl -u email:token` puts credentials in process args, visible via `ps` on the same user. Acceptable for personal CLI; for shared systems use `curl --config -` pattern (deferred to `bb-bash-oja`).
+- **`pr update --reviewers` uses usernames.** Bitbucket is deprecating username as a stable identifier. UUID/account_id migration tracked in bb-bash-oja.
 - **`pr list --reviewer` not implemented.** BBQL doesn't support filtering on `reviewers.username` (only `reviewers.uuid`). Workaround: pipe `pr list --state=all` through `jq` for client-side filter.
 - **Auto-detect requires git in PATH.** When falling back to env vars (step 4), git is not invoked.
