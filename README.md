@@ -21,7 +21,7 @@ Manual install, env-var overrides, and security-inspection one-liner: see [docs/
 
 ### 1. Create a Bitbucket API token
 
-Go to https://bitbucket.org/account/settings/api-tokens/. Required scopes:
+Go to https://id.atlassian.com/manage-profile/security/api-tokens. Required scopes:
 
 - `read:repository:bitbucket`
 - `read:pullrequest:bitbucket`
@@ -55,10 +55,10 @@ Idempotent — re-run is safe; pin a release with `BB_BASH_REF=v0.2.0 bbb instal
 
 | Type | Lands at | Loading | Best for |
 |---|---|---|---|
-| **CLAUDE** `CLAUDE.md` snippet | `CLAUDE.md` in project root | every turn | Claude / Cursor / Copilot via `CLAUDE.md` |
-| **AGENTS** `AGENTS.md` snippet | `AGENTS.md` in project root | every turn | cross-tool agents (OpenAI Codex, Aider, Continue, …) |
-| **Rule** | `.claude/rules/bb-bash-rule.md` | session start | short always-on hint, "bbb exists, here's how" |
-| **Skill** | `.claude/skills/bb-bash/SKILL.md` | on-demand | full workflows (review, respond, batch cleanup); zero context cost until invoked |
+| `CLAUDE.md` | project root | every turn | Claude / Cursor / Copilot via `CLAUDE.md` |
+| `AGENTS.md` | project root | every turn | cross-tool agents (OpenAI Codex, Aider, Continue, …) |
+| Rule | `.claude/rules/bb-bash-rule.md` | session start | short always-on hint, "bbb exists, here's how" |
+| Skill | `.claude/skills/bb-bash/SKILL.md` | on-demand | full workflows (review, respond, batch cleanup); zero context cost until invoked |
 
 Pick what fits your stack — `install-agent` accepts any combination of `--rule --skill --claude --agents`.
 
