@@ -44,9 +44,10 @@ Workspace/repo are [auto-detected](#how-auto-detect-works) from `git remote`. Ov
 Run `bbb install-agent` inside your project to drop integration artifacts so the AI agents you already use (Claude Code, Cursor, Copilot Chat, Codex, Aider, …) know how to call `bbb` without extra prompting.
 
 ```bash
-bbb install-agent --rule --skill --claude --agents   # drop all four
-bbb install-agent --claude --dry-run                  # preview without writing
-bbb install-agent --rule --force                      # overwrite existing
+bbb install-agent --claude              # snippet → CLAUDE.md (works with any CLAUDE.md-reading agent)
+bbb install-agent --rule --skill        # Claude Code: rule (always-on hint) + skill (on-demand workflows)
+bbb install-agent --claude --dry-run    # preview without writing
+bbb install-agent --rule --force        # overwrite an existing artifact
 ```
 
 Idempotent — re-run is safe; pin a release with `BB_BASH_REF=v0.2.0 bbb install-agent ...`.
@@ -62,7 +63,7 @@ Idempotent — re-run is safe; pin a release with `BB_BASH_REF=v0.2.0 bbb instal
 | Rule | `.claude/rules/bb-bash-rule.md` | session start | short always-on hint, "bbb exists, here's how" |
 | Skill | `.claude/skills/bb-bash/SKILL.md` | on-demand | full workflows (review, respond, batch cleanup); zero context cost until invoked |
 
-Pick what fits your stack — `install-agent` accepts any combination of `--rule --skill --claude --agents`.
+Combine freely — `install-agent` accepts any subset of `--rule --skill --claude --agents`. Or browse and copy the sources by hand: [`docs/agents/`](docs/agents/) ([README](docs/agents/README.md)).
 
 ### Then ask your agent things like
 
