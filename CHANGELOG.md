@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/agents/bb-bash-snippet.md` — clean, no-wrapper version of the bb-bash CLAUDE.md section. Used by `install-agent --claude` / `--agents` as the canonical source. (bb-bash-k9i)
 - `docs/agents/README.md` — overview of all four integration artifacts (one-page menu, "pick any one — each is self-contained"). (bb-bash-6ru)
 - `docs/installation.md` — installer details (env-var overrides, manual install, security inspection) extracted from README. (bb-bash-6ru)
+- `bbb install-agent --global` — installs artifacts into user-global Claude Code config (`$HOME/.claude/`) for cross-project availability. Supports `--rule`, `--skill`, `--claude`. `--agents` is intentionally blocked (no widely-adopted global `AGENTS.md` path). Requires explicit selector (no interactive in global mode). Includes a `mkdir -p` fix in `_install_agent_md_section` so a fresh `~/.claude/` is created on first run. Five new bats tests pin both validation gates and the three working destinations under an isolated `HOME=$TEST_TMP/h`. (bb-bash-6ru)
 - `stub_curl_download` helper in `test/test_helper.bash` — bats stub for `curl ... -o file` style download (complement to existing `stub_curl` API-call stub). (bb-bash-k9i)
 - README "For AI agents" section now lists three integration paths (CLAUDE.md snippet, rule, skill) with copy-paste curl one-liners for the rule and skill, plus a new "One-shot install" section showcasing `bbb install-agent`.
 

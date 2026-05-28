@@ -170,6 +170,55 @@ combined content"
     grep -q "combined content" "$TEST_TMP/AGENTS.md"
 }
 
+# --- --global flag (bb-bash-6ru) ---
+#
+# Global install writes to $HOME/.claude/ instead of $PWD/.claude/. The four
+# tests below pin: the two validation gates (alone, with --agents) and the
+# three working destinations (--rule, --skill, --claude). HOME is forced to
+# $TEST_TMP/h so no test touches the real ~/.claude.
+
+@test "install-agent: --global alone (no selector) dies with explainer" {
+    HOME="$TEST_TMP/h" _run_bbb install-agent --global --dry-run
+    [ "$status" -ne 0 ]
+    contains "$output" "*--global requires*"
+}
+
+@test "install-agent: --agents --global dies (no standard global AGENTS.md)" {
+    HOME="$TEST_TMP/h" _run_bbb install-agent --agents --global --dry-run
+    [ "$status" -ne 0 ]
+    contains "$output" "*--agents incompatible with --global*"
+}
+
+@test "install-agent: --rule --global writes to \$HOME/.claude/rules/" {
+    stub_curl_download "rule body" 200
+    HOME="$TEST_TMP/h" _run_bbb install-agent --rule --global
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/h/.claude/rules/bb-bash-rule.md" ]
+    grep -q "rule body" "$TEST_TMP/h/.claude/rules/bb-bash-rule.md"
+    # Project-level path should NOT have been written
+    [ ! -e "$TEST_TMP/.claude/rules/bb-bash-rule.md" ]
+}
+
+@test "install-agent: --skill --global writes to \$HOME/.claude/skills/bb-bash/" {
+    stub_curl_download "skill body" 200
+    HOME="$TEST_TMP/h" _run_bbb install-agent --skill --global
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/h/.claude/skills/bb-bash/SKILL.md" ]
+    grep -q "skill body" "$TEST_TMP/h/.claude/skills/bb-bash/SKILL.md"
+    [ ! -e "$TEST_TMP/.claude/skills/bb-bash/SKILL.md" ]
+}
+
+@test "install-agent: --claude --global appends to \$HOME/.claude/CLAUDE.md" {
+    stub_curl_download "## Bitbucket via bb-bash
+snippet body" 200
+    HOME="$TEST_TMP/h" _run_bbb install-agent --claude --global
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_TMP/h/.claude/CLAUDE.md" ]
+    grep -q "Bitbucket via bb-bash" "$TEST_TMP/h/.claude/CLAUDE.md"
+    # Project-level CLAUDE.md should NOT have been touched
+    [ ! -e "$TEST_TMP/CLAUDE.md" ]
+}
+
 # --- URL→file mapping regression (bb-bash-6ru) ---
 #
 # Guard against renaming an artifact locally without updating the fetch URL

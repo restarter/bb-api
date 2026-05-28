@@ -1,4 +1,4 @@
-# bb-bash
+# bb-bash (bbb)
 
 > **Bitbucket Cloud CLI built for AI coding agents** — single-file bash, with `CLAUDE.md` snippet, Rule, and Skill bundled out of the box.
 
@@ -46,11 +46,12 @@ Run `bbb install-agent` inside your project to drop integration artifacts so the
 ```bash
 bbb install-agent --claude              # snippet → CLAUDE.md (works with any CLAUDE.md-reading agent)
 bbb install-agent --rule --skill        # Claude Code: rule (always-on hint) + skill (on-demand workflows)
+bbb install-agent --rule --global       # user-global rule (auto-loaded in every project)
 bbb install-agent --claude --dry-run    # preview without writing
 bbb install-agent --rule --force        # overwrite an existing artifact
 ```
 
-Idempotent — re-run is safe; pin a release with `BB_BASH_REF=v0.2.0 bbb install-agent ...`.
+Idempotent — re-run is safe; pin a release with `BB_BASH_REF=v0.2.0 bbb install-agent ...`. Pass `--global` (works with `--rule` / `--skill` / `--claude`) to install into `~/.claude/` for cross-project availability. `--agents` is project-only — no widely-adopted global path for `AGENTS.md`.
 
 ### What ships out of the box
 
